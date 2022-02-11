@@ -4,15 +4,25 @@ ANNOTATIONS = "__annotations__"
 UNDERSCORE = "_"
 word_set = set()
 name_set = set() # used to see if we already iterated over something with that name
+dict_set = set()
 
 add_to_wordset = word_set.add
 add_to_nameset = name_set.add
+add_to_dictset = dict_set.add
+
+
+for dictionary in ["en_US.txt", "python.txt", "technical.txt"]:
+    with open(dictionary, "r") as f:
+        for line in f.readlines():
+            add_to_dictset(line.lower())
 
 def add_words(name):
     add_to_nameset(name)
     words = name.split(UNDERSCORE)
     for word in words:
-        add_to_wordset(word)
+        word = word.lower()
+        if word not in dict_set:
+            add_to_wordset(word)
 
 def is_private(attr_name):
     return attr_name.startswith(UNDERSCORE)
@@ -32,6 +42,8 @@ def _get_sub_attrs(attr):
     _get_annotations(attr)
     for sub_attr_name in dir(attr):
         if is_private(sub_attr_name) or sub_attr_name in name_set:
+            continue
+        if not hasattr(attr, sub_attr_name):
             continue
         add_words(sub_attr_name)
         sub_attr = getattr(attr, sub_attr_name)
