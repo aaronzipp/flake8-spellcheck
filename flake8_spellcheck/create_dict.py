@@ -14,7 +14,7 @@ add_to_dict_set = dict_set.add
 for dictionary in ["en_US.txt", "python.txt", "technical.txt"]:
     with open(dictionary, "r") as f:
         for line in f.readlines():
-            add_to_dict_set(line.lower())
+            add_to_dict_set(line.lower().strip())
 
 def add_words(name):
     add_to_name_set(name)
@@ -92,6 +92,10 @@ def write_word_file(mod_name, filename, abbreviations=None):
 
     words = "\n".join(sorted(word_set))
     with open(filename, "w") as f:
+        f.write(words)
+
+    words = "\n".join(sorted(dict_set))
+    with open("dicts.txt", "w") as f:
         f.write(words)
 
 mod_name = "pandas"
