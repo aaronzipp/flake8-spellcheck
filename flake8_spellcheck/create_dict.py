@@ -1,12 +1,21 @@
 import pkgutil
 
 ANNOTATIONS = "__annotations__"
+UNDERSCORE = "_"
 word_set = set()
-add_to_wordset = word_set.add
+name_set = set() # used to see if we already iterated over something with that name
 
+add_to_wordset = word_set.add
+add_to_nameset = name_set.add
+
+def add_words(name):
+    add_to_nameset(name)
+    words = name.split(UNDERSCORE)
+    for word in words:
+        add_to_wordset(word)
 
 def is_private(attr_name):
-    return attr_name.startswith("_")
+    return attr_name.startswith(UNDERSCORE)
 
 def _get_annotations(attr):
     if attr is not None and hasattr(attr, ANNOTATIONS):
@@ -17,25 +26,25 @@ def _get_annotations(attr):
         for key in argument_dict.keys():
             if is_private(key) or key == "return":
                 return
-            add_to_wordset(key)
+            add_words(key)
 
 def _get_sub_attrs(attr):
     _get_annotations(attr)
     for sub_attr_name in dir(attr):
-        if is_private(sub_attr_name) or sub_attr_name in word_set:
+        if is_private(sub_attr_name) or sub_attr_name in name_set:
             continue
-        add_to_wordset(sub_attr_name)
+        add_words(sub_attr_name)
         sub_attr = getattr(attr, sub_attr_name)
-        _get_sub_attrs(sub_attr_name)
+        _get_sub_attrs(sub_attr)
 
 
 def get_word_set(mod):
-    add_to_wordset(mod.__name__)
+    add_words(mod.__name__)
     # it doesn't get all result if you call _get_sub_attrs on mod!?
     for part in dir(mod):
         if is_private(part):
             continue
-        add_to_wordset(part)
+        add_words(part)
         cls = getattr(mod, part)
         _get_sub_attrs(cls)
 
@@ -45,7 +54,7 @@ def write_word_file(mod_name, filename, abbreviations=None):
 
     if abbreviations is not None:
         for abbreviation in abbreviations:
-            add_to_wordset(abbreviation)
+            add_words(abbreviation)
 
     get_word_set(mod)
 
@@ -65,6 +74,9 @@ def write_word_file(mod_name, filename, abbreviations=None):
             continue
         except RuntimeError:
             continue
+
+    if "" in word_set:
+        word_set.remove("")
 
     words = "\n".join(sorted(word_set))
     with open(filename, "w") as f:
