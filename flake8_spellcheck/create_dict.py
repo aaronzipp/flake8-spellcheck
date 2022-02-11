@@ -6,23 +6,23 @@ word_set = set()
 name_set = set() # used to see if we already iterated over something with that name
 dict_set = set()
 
-add_to_wordset = word_set.add
-add_to_nameset = name_set.add
-add_to_dictset = dict_set.add
+add_to_word_set = word_set.add
+add_to_name_set = name_set.add
+add_to_dict_set = dict_set.add
 
 
 for dictionary in ["en_US.txt", "python.txt", "technical.txt"]:
     with open(dictionary, "r") as f:
         for line in f.readlines():
-            add_to_dictset(line.lower())
+            add_to_dict_set(line.lower())
 
 def add_words(name):
-    add_to_nameset(name)
+    add_to_name_set(name)
     words = name.split(UNDERSCORE)
     for word in words:
         word = word.lower()
         if word not in dict_set:
-            add_to_wordset(word)
+            add_to_word_set(word)
 
 def is_private(attr_name):
     return attr_name.startswith(UNDERSCORE)
