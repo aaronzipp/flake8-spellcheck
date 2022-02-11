@@ -94,10 +94,6 @@ def write_word_file(mod_name, filename, abbreviations=None):
     with open(filename, "w") as f:
         f.write(words)
 
-    words = "\n".join(sorted(dict_set))
-    with open("dicts.txt", "w") as f:
-        f.write(words)
-
 mod_name = "pandas"
 filename = ".".join([mod_name, "txt"])
 abbreviations = ["pd"]
