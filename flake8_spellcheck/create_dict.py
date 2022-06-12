@@ -1,10 +1,15 @@
 import pkgutil
+import warnings
+from typing import Any, List, Set
+
+# Suppress warnings, since these are depreciation warnings when importing a submodule
+warnings.filterwarnings("ignore")
 
 ANNOTATIONS = "__annotations__"
 UNDERSCORE = "_"
-word_set = set()
-name_set = set()  # used to see if we already iterated over something with that name
-dict_set = set()
+word_set: Set[str] = set()
+name_set: Set[str] = set()  # used to see if we already iterated over something with that name
+dict_set: Set[str] = set()
 
 add_to_word_set = word_set.add
 add_to_name_set = name_set.add
@@ -12,12 +17,12 @@ add_to_dict_set = dict_set.add
 
 
 for dictionary in ["en_US.txt", "python.txt", "technical.txt"]:
-    with open(dictionary, "r") as f:
+    with open(dictionary) as f:
         for line in f.readlines():
             add_to_dict_set(line.lower().strip())
 
 
-def add_words(name):
+def add_words(name: str) -> None:
     add_to_name_set(name)
     words = name.split(UNDERSCORE)
     for word in words:
@@ -26,11 +31,11 @@ def add_words(name):
             add_to_word_set(word)
 
 
-def is_private(attr_name):
+def is_private(attr_name: str) -> bool:
     return attr_name.startswith(UNDERSCORE)
 
 
-def _get_annotations(attr):
+def _get_annotations(attr: str) -> None:
     if attr is not None and hasattr(attr, ANNOTATIONS):
         argument_dict = getattr(attr, ANNOTATIONS)
         # some objects that aren't functions implement __annotations__
@@ -42,7 +47,7 @@ def _get_annotations(attr):
             add_words(key)
 
 
-def _get_sub_attrs(attr):
+def _get_sub_attrs(attr: str) -> None:
     _get_annotations(attr)
     for sub_attr_name in dir(attr):
         if is_private(sub_attr_name) or sub_attr_name in name_set:
@@ -54,7 +59,7 @@ def _get_sub_attrs(attr):
         _get_sub_attrs(sub_attr)
 
 
-def get_word_set(mod):
+def get_word_set(mod: Any) -> None:
     add_words(mod.__name__)
     # it doesn't get all result if you call _get_sub_attrs on mod!?
     for part in dir(mod):
@@ -65,7 +70,22 @@ def get_word_set(mod):
         _get_sub_attrs(cls)
 
 
-def write_word_file(mod_name, filename, abbreviations=None):
+def word_set_for_submodule(sub_mod_name: str) -> None:
+    # Prevent that tests get loaded
+    if "test" in sub_mod_name:
+        return
+    try:
+        sub_mod = __import__(sub_mod_name)
+        get_word_set(sub_mod)
+    # Don't care for imports and backends that aren't available
+    except ImportError:
+        return
+    # This could be problematic, investigare the error further
+    except RuntimeError:
+        return
+
+
+def write_word_file(mod_name: str, filename: str, abbreviations: List[str] = None) -> None:
     mod = __import__(mod_name)
 
     if abbreviations is not None:
@@ -76,21 +96,9 @@ def write_word_file(mod_name, filename, abbreviations=None):
 
     try:
         for importer, sub_mod_name, ispkg in pkgutil.walk_packages(
-            path=mod.__path__,
-            prefix=mod.__name__ + '.',
-            onerror=lambda x: None
+            path=mod.__path__, prefix=mod.__name__ + ".", onerror=lambda x: None
         ):
-            # Prevent that tests get loaded
-            if "test" in sub_mod_name:
-                continue
-            try:
-                sub_mod = __import__(sub_mod_name)
-                get_word_set(sub_mod)
-            # Don't care for imports and backends that aren't available
-            except ImportError:
-                continue
-            except RuntimeError:
-                continue
+            word_set_for_submodule(sub_mod_name)
     # Some modules don't have a __path__ attribute
     except AttributeError:
         print(f"{mod.__name__} has no __path__ attribute. Can't find submodules!")
@@ -103,7 +111,8 @@ def write_word_file(mod_name, filename, abbreviations=None):
         f.write(words)
 
 
-mod_name = "pandas"
-filename = ".".join([mod_name, "txt"])
-abbreviations = ["pd"]
-write_word_file(mod_name, filename, abbreviations)
+if __name__ == "__main__":
+    mod_name = "matplotlib"
+    filename = ".".join([mod_name, "txt"])
+    abbreviations = ["pd"]  # common abbrevations used in this package
+    write_word_file(mod_name, filename, abbreviations)
