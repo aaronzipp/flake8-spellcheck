@@ -125,7 +125,7 @@ def write_word_file(mod_name: str, filename: str, abbreviations: List[str] = Non
 
 
 if __name__ == "__main__":
-    mod_name = "matplotlib"  # the exact name how the package gets imported
+    mod_name = "pandas"  # the exact name how the package gets imported
     filename = ".".join([mod_name, "txt"])
     abbreviations = ["pd"]  # common abbrevations used in this package
     write_word_file(mod_name, filename, abbreviations)
