@@ -3,7 +3,7 @@ import pkgutil
 ANNOTATIONS = "__annotations__"
 UNDERSCORE = "_"
 word_set = set()
-name_set = set() # used to see if we already iterated over something with that name
+name_set = set()  # used to see if we already iterated over something with that name
 dict_set = set()
 
 add_to_word_set = word_set.add
@@ -16,6 +16,7 @@ for dictionary in ["en_US.txt", "python.txt", "technical.txt"]:
         for line in f.readlines():
             add_to_dict_set(line.lower().strip())
 
+
 def add_words(name):
     add_to_name_set(name)
     words = name.split(UNDERSCORE)
@@ -24,8 +25,10 @@ def add_words(name):
         if word not in dict_set:
             add_to_word_set(word)
 
+
 def is_private(attr_name):
     return attr_name.startswith(UNDERSCORE)
+
 
 def _get_annotations(attr):
     if attr is not None and hasattr(attr, ANNOTATIONS):
@@ -37,6 +40,7 @@ def _get_annotations(attr):
             if is_private(key) or key == "return":
                 return
             add_words(key)
+
 
 def _get_sub_attrs(attr):
     _get_annotations(attr)
@@ -70,22 +74,26 @@ def write_word_file(mod_name, filename, abbreviations=None):
 
     get_word_set(mod)
 
-    for importer, sub_mod_name, ispkg in pkgutil.walk_packages(
-        path=mod.__path__,
-        prefix=mod.__name__ + '.',
-        onerror=lambda x: None
-    ):
-        try:
+    try:
+        for importer, sub_mod_name, ispkg in pkgutil.walk_packages(
+            path=mod.__path__,
+            prefix=mod.__name__ + '.',
+            onerror=lambda x: None
+        ):
             # Prevent that tests get loaded
             if "test" in sub_mod_name:
                 continue
-            sub_mod = __import__(sub_mod_name)
-            get_word_set(sub_mod)
-        # Don't care for imports and backends that aren't available
-        except ImportError:
-            continue
-        except RuntimeError:
-            continue
+            try:
+                sub_mod = __import__(sub_mod_name)
+                get_word_set(sub_mod)
+            # Don't care for imports and backends that aren't available
+            except ImportError:
+                continue
+            except RuntimeError:
+                continue
+    # Some modules don't have a __path__ attribute
+    except AttributeError:
+        print(f"{mod.__name__} has no __path__ attribute. Can't find submodules!")
 
     if "" in word_set:
         word_set.remove("")
@@ -93,6 +101,7 @@ def write_word_file(mod_name, filename, abbreviations=None):
     words = "\n".join(sorted(word_set))
     with open(filename, "w") as f:
         f.write(words)
+
 
 mod_name = "pandas"
 filename = ".".join([mod_name, "txt"])
